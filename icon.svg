@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#0b0f19" />
+    </linearGradient>
+    <linearGradient id="shoeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+    <linearGradient id="soleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#6366f1" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background tile with border -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" stroke="#312e81" stroke-width="8" />
+
+  <!-- Inner subtle grid lines -->
+  <path d="M 64 256 H 448 M 256 64 V 448" stroke="#ffffff" stroke-opacity="0.04" stroke-width="2" stroke-dasharray="8 8" />
+
+  <!-- Stylized Footwear Shoe Group -->
+  <g transform="translate(30, 20)" filter="url(#glow)">
+    <!-- Shoe Sole -->
+    <path d="M 90 320 C 130 320 180 325 240 325 C 310 325 360 315 390 310 C 405 308 418 318 418 332 C 418 348 402 360 382 360 C 310 360 210 362 105 360 C 85 360 70 345 70 328 C 70 316 80 320 90 320 Z" fill="url(#soleGrad)" />
+    
+    <!-- Shoe Upper Body -->
+    <path d="M 95 315 C 95 315 110 240 160 220 C 200 205 230 230 265 190 C 285 168 315 180 340 215 C 365 250 380 280 395 305 L 95 315 Z" fill="url(#shoeGrad)" stroke="#818cf8" stroke-width="4" />
+
+    <!-- Laces / Stripes detail -->
+    <path d="M 230 215 L 260 245 M 248 198 L 278 228 M 266 182 L 296 212" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-opacity="0.9" />
+    <circle cx="160" cy="270" r="14" fill="#ffffff" fill-opacity="0.2" />
+    <path d="M 115 310 Q 180 290 280 295" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-opacity="0.4" />
+  </g>
+
+  <!-- Credit / Udhar Ledger Rupee Coin Badge -->
+  <g transform="translate(330, 90)">
+    <circle cx="55" cy="55" r="55" fill="url(#goldGrad)" stroke="#ffffff" stroke-width="5" />
+    <text x="55" y="74" font-family="'Plus Jakarta Sans', Inter, system-ui, sans-serif" font-size="62" font-weight="900" fill="#ffffff" text-anchor="middle">₹</text>
+  </g>
+</svg>

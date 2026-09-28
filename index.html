@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>StepLedger | Footwear Dealer Udhar & Weekly Settlement Khata</title>
+  <meta name="description" content="Progressive Web App for footwear businessmen to manage stock purchased on credit (udhar), track dealer payments, and weekly settlement schedules.">
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="StepLedger">
+  
+  <!-- Favicons and PWA Icons -->
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand-section">
+        <div class="brand-logo-wrap" title="StepLedger Footwear Khata">
+          <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 90 320 C 130 320 180 325 240 325 C 310 325 360 315 390 310 C 405 308 418 318 418 332 C 418 348 402 360 382 360 C 310 360 210 362 105 360 C 85 360 70 345 70 328 Z" fill="#10b981" />
+            <path d="M 95 315 C 95 315 110 240 160 220 C 200 205 230 230 265 190 C 285 168 315 180 340 215 C 365 250 380 280 395 305 L 95 315 Z" fill="#6366f1" stroke="#818cf8" stroke-width="8" />
+            <circle cx="380" cy="150" r="60" fill="#f59e0b" />
+            <text x="380" y="172" font-family="sans-serif" font-size="68" font-weight="900" fill="#ffffff" text-anchor="middle">₹</text>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title" id="header-shop-name">StepLedger Footwear</h1>
+          <div class="shop-subheading">
+            <span>👟 Dealer Udhar & Weekly Khata</span>
+            <div id="network-status-badge" class="status-badge" title="Network status">
+              <span class="status-dot online"></span> <span>Online</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-header-install" class="btn btn-sm btn-outline hidden" title="Install on Mobile / PC">
+          📲 Install App
+        </button>
+        <button class="btn btn-sm btn-primary" onclick="UI.openBillModal()" id="btn-header-new-bill">
+          + Inward Stock Bill
+        </button>
+        <button class="btn btn-sm btn-success" onclick="UI.openPaymentModal()" id="btn-header-pay">
+          💵 Pay Dealer
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" class="pwa-banner hidden">
+      <div class="pwa-banner-content">
+        <span class="pwa-icon">📱</span>
+        <div>
+          <strong>Install StepLedger App for Offline Shop Use</strong>
+          <p class="text-muted" style="font-size: 0.85rem;">Use offline in wholesale mandis without internet. Quick 1-tap access on home screen.</p>
+        </div>
+      </div>
+      <button id="btn-pwa-install" class="btn btn-sm btn-primary">Install Now</button>
+    </div>
+
+    <!-- Settlement Alert Banner -->
+    <div id="weekly-alert-banner" class="alert-banner hidden"></div>
+
+    <!-- Top KPI Overview Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card kpi-pending">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Udhar Remaining</span>
+          <span class="kpi-icon-pill">🔴</span>
+        </div>
+        <div class="kpi-value text-amber" id="kpi-pending-udhar">₹0</div>
+        <div class="kpi-footer-note">Pending payment across suppliers</div>
+      </div>
+
+      <div class="kpi-card kpi-paid">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Paid (Jama)</span>
+          <span class="kpi-icon-pill">🟢</span>
+        </div>
+        <div class="kpi-value text-success" id="kpi-total-paid">₹0</div>
+        <div class="kpi-footer-note">All settled dealer payments</div>
+      </div>
+
+      <div class="kpi-card kpi-weekly">
+        <div class="kpi-header">
+          <span class="kpi-label">Due This Week</span>
+          <span class="kpi-icon-pill">🗓️</span>
+        </div>
+        <div class="kpi-value text-cyan" id="kpi-weekly-due">₹0</div>
+        <div class="kpi-footer-note">Weekly settlement schedule</div>
+      </div>
+
+      <div class="kpi-card kpi-stock">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Footwear Stock</span>
+          <span class="kpi-icon-pill">👟</span>
+        </div>
+        <div class="kpi-value" id="kpi-total-pairs">0 <span class="unit-text">pairs</span></div>
+        <div class="kpi-footer-note">Inwarded on credit ledger</div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav-bar" aria-label="Main Navigation">
+      <button class="nav-tab active" data-tab-target="dealers">
+        <span>🏬</span> Footwear Dealers
+      </button>
+      <button class="nav-tab" data-tab-target="weekly">
+        <span>📅</span> Weekly Settlement Planner
+      </button>
+      <button class="nav-tab" data-tab-target="transactions">
+        <span>🧾</span> All Bills & Payments
+      </button>
+      <button class="nav-tab" data-tab-target="reports">
+        <span>📊</span> Stock & Udhar Reports
+      </button>
+      <button class="nav-tab" data-tab-target="settings">
+        <span>⚙️</span> Shop Settings & Backup
+      </button>
+    </nav>
+
+    <!-- TAB 1: DEALERS LIST & KHATA OVERVIEW -->
+    <section id="tab-dealers" class="tab-content active">
+      <div class="controls-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="dealer-search" placeholder="Search supplier by name, wholesale mandi (Agra, Kanpur...), or phone...">
+        </div>
+        <div class="filter-pills-group">
+          <button class="filter-pill active" data-filter="all">All Dealers</button>
+          <button class="filter-pill" data-filter="pending">🔴 Has Udhar</button>
+          <button class="filter-pill" data-filter="weekly">⚡ Due Today</button>
+          <button class="filter-pill" data-filter="cleared">✅ All Cleared</button>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="UI.openModal('modal-add-dealer')">
+          + Add New Dealer
+        </button>
+      </div>
+
+      <div id="dealers-grid" class="dealers-grid">
+        <!-- Rendered dynamically via UI.renderDealers() -->
+      </div>
+    </section>
+
+    <!-- TAB 2: WEEKLY SETTLEMENT PLANNER -->
+    <section id="tab-weekly" class="tab-content">
+      <div class="controls-bar">
+        <div>
+          <h2>Weekly Payment Settlement Schedule</h2>
+          <p class="text-muted" style="font-size: 0.85rem;">Footwear dealers grouped by their customary weekly clearance day (Monday to Sunday).</p>
+        </div>
+      </div>
+      <div id="weekly-planner-container">
+        <!-- Rendered dynamically via UI.renderWeeklyPlanner() -->
+      </div>
+    </section>
+
+    <!-- TAB 3: ALL TRANSACTIONS (MASTER LEDGER) -->
+    <section id="tab-transactions" class="tab-content">
+      <div class="controls-bar">
+        <div class="form-row" style="flex: 1; max-width: 600px;">
+          <select id="tx-filter-type" class="form-select">
+            <option value="all">All Entries (Bills & Payments)</option>
+            <option value="BILL">Only Stock Bills (Udhar)</option>
+            <option value="PAYMENT">Only Payments (Jama)</option>
+          </select>
+          <select id="tx-filter-dealer" class="form-select">
+            <option value="all">All Footwear Dealers</option>
+          </select>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="window.print()">🖨️ Print Statement</button>
+      </div>
+
+      <div id="transactions-list" class="tx-list">
+        <!-- Rendered dynamically via UI.renderTransactions() -->
+      </div>
+    </section>
+
+    <!-- TAB 4: REPORTS & ANALYTICS -->
+    <section id="tab-reports" class="tab-content">
+      <div class="reports-grid">
+        <div class="report-panel">
+          <h3><span>👟</span> Inward Footwear by Category</h3>
+          <div id="report-category-list"></div>
+        </div>
+
+        <div class="report-panel">
+          <h3><span>⚠️</span> Top Suppliers by Outstanding Udhar</h3>
+          <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 12px;">Dealers with the highest pending balances needing clearance.</p>
+          <div id="report-top-creditors"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SHOP SETTINGS & BACKUP -->
+    <section id="tab-settings" class="tab-content">
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h3><span>🏬</span> Shop Profile</h3>
+          <form id="form-settings">
+            <div class="form-group">
+              <label for="settings-shop-name">Footwear Shop / Firm Name</label>
+              <input type="text" id="settings-shop-name" class="form-input" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="settings-owner-name">Proprietor Name</label>
+                <input type="text" id="settings-owner-name" class="form-input">
+              </div>
+              <div class="form-group">
+                <label for="settings-phone">WhatsApp / Phone</label>
+                <input type="text" id="settings-phone" class="form-input">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="settings-default-day">Default Weekly Payment Day</label>
+              <select id="settings-default-day" class="form-select">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Shop Profile</button>
+          </form>
+        </div>
+
+        <div class="settings-card">
+          <h3><span>💾</span> Data Backup & Safety</h3>
+          <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 16px;">
+            All your khata data is securely saved in your browser's persistent storage. You can also export a JSON backup file to keep in Google Drive or WhatsApp.
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button id="btn-export-backup" class="btn btn-outline">
+              📥 Download Complete Khata Backup (.json)
+            </button>
+            <label class="btn btn-outline" style="cursor: pointer;">
+              📤 Restore Data from File
+              <input type="file" id="file-restore-backup" accept=".json" style="display: none;">
+            </label>
+            <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 8px 0;">
+            <button id="btn-reset-sample-data" class="btn btn-sm btn-outline text-muted">
+              🔄 Reset to Sample Footwear Data
+            </button>
+            <button id="btn-clear-all-data" class="btn btn-sm btn-outline text-danger">
+              🗑️ Clear All Entries (Fresh Start)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- MODAL: ADD DEALER -->
+  <div id="modal-add-dealer" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>+ Add Footwear Supplier / Dealer</h3>
+        <button class="modal-close" type="button">&times;</button>
+      </div>
+      <form id="form-add-dealer">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="dealer-name">Dealer / Agency / Firm Name *</label>
+            <input type="text" id="dealer-name" name="name" class="form-input" placeholder="e.g. Gupta Shoes Wholesale Agra" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dealer-contact">Contact Person</label>
+              <input type="text" id="dealer-contact" name="contactPerson" class="form-input" placeholder="e.g. Ramesh Bhai">
+            </div>
+            <div class="form-group">
+              <label for="dealer-phone">Phone / WhatsApp</label>
+              <input type="tel" id="dealer-phone" name="phone" class="form-input" placeholder="e.g. 9829011223">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dealer-city">Wholesale Mandi / City</label>
+              <input type="text" id="dealer-city" name="city" class="form-input" placeholder="e.g. Agra, Kanpur, Delhi">
+            </div>
+            <div class="form-group">
+              <label for="dealer-day">Weekly Settlement Day</label>
+              <select id="dealer-day" name="settlementDay" class="form-select">
+                <option value="Saturday">Saturday</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Sunday">Sunday</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dealer-opening">Previous Udhar / Opening Balance (₹)</label>
+            <input type="number" id="dealer-opening" name="openingBalance" class="form-input" value="0" min="0">
+            <small class="text-dim">Amount already pending before starting this app.</small>
+          </div>
+          <div class="form-group">
+            <label for="dealer-notes">Footwear Supply Specialization / Notes</label>
+            <textarea id="dealer-notes" name="notes" class="form-textarea" placeholder="e.g. Sports shoes, PU chappals, school shoes..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT DEALER -->
+  <div id="modal-edit-dealer" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Supplier Details</h3>
+        <button class="modal-close" type="button">&times;</button>
+      </div>
+      <form id="form-edit-dealer">
+        <input type="hidden" id="edit-dealer-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-dealer-name">Dealer / Agency / Firm Name *</label>
+            <input type="text" id="edit-dealer-name" class="form-input" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-dealer-contact">Contact Person</label>
+              <input type="text" id="edit-dealer-contact" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="edit-dealer-phone">Phone / WhatsApp</label>
+              <input type="tel" id="edit-dealer-phone" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-dealer-city">Wholesale Mandi / City</label>
+              <input type="text" id="edit-dealer-city" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="edit-dealer-day">Weekly Settlement Day</label>
+              <select id="edit-dealer-day" class="form-select">
+                <option value="Saturday">Saturday</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Sunday">Sunday</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="edit-dealer-opening">Opening Balance (₹)</label>
+            <input type="number" id="edit-dealer-opening" class="form-input" min="0">
+          </div>
+          <div class="form-group">
+            <label for="edit-dealer-notes">Notes</label>
+            <textarea id="edit-dealer-notes" class="form-textarea"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <button type="button" id="btn-delete-dealer" class="btn btn-sm btn-outline text-danger">Delete Dealer</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: INWARD STOCK BILL (PURCHASE ON CREDIT/UDHAR) -->
+  <div id="modal-stock-bill" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📦 Inward Footwear Stock on Udhar (Credit Bill)</h3>
+        <button class="modal-close" type="button">&times;</button>
+      </div>
+      <form id="form-stock-bill">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bill-dealer-select">Select Supplier / Dealer *</label>
+              <select id="bill-dealer-select" class="form-select" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="bill-date">Bill / Inward Date *</label>
+              <input type="date" id="bill-date" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bill-number">Bill / Invoice / Challan No.</label>
+              <input type="text" id="bill-number" class="form-input" placeholder="e.g. INV-8492">
+            </div>
+            <div class="form-group">
+              <label for="bill-category">Footwear Category</label>
+              <select id="bill-category" class="form-select">
+                <option value="Sports Shoes">Sports Shoes & Sneakers</option>
+                <option value="Casual Sneakers">Casual Shoes & Loafers</option>
+                <option value="Formal Shoes">Formal Leather / Derby Shoes</option>
+                <option value="PU Chappals / Slippers">PU Chappals & Slippers</option>
+                <option value="School Shoes">School Black/White Shoes</option>
+                <option value="Sandals">Sandals & Floaters</option>
+                <option value="Kids Footwear">Kids Shoes & Light Sneakers</option>
+                <option value="Safety Shoes">Safety & Industrial Shoes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="bill-brand">Brand / Article / Model Name</label>
+            <input type="text" id="bill-brand" class="form-input" placeholder="e.g. Action Falcon-02 / Campus Air-7">
+          </div>
+
+          <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="form-group">
+              <label for="bill-cartons">Cartons (Peti)</label>
+              <input type="number" id="bill-cartons" class="form-input" min="1" placeholder="10">
+            </div>
+            <div class="form-group">
+              <label for="bill-pairs-per-carton">Pairs/Carton</label>
+              <input type="number" id="bill-pairs-per-carton" class="form-input" value="12" min="1">
+            </div>
+            <div class="form-group">
+              <label for="bill-total-pairs">Total Pairs</label>
+              <input type="number" id="bill-total-pairs" class="form-input" placeholder="120">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bill-rate-per-pair">Cost Rate per Pair (₹)</label>
+              <input type="number" id="bill-rate-per-pair" class="form-input" step="any" placeholder="e.g. 450">
+            </div>
+            <div class="form-group">
+              <label for="bill-amount">Total Bill Amount (₹) *</label>
+              <input type="number" id="bill-amount" class="form-input font-bold text-amber" required placeholder="54000">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bill-advance-paid">Immediate Advance Paid (if any)</label>
+              <input type="number" id="bill-advance-paid" class="form-input" value="0" min="0">
+              <small class="text-dim">Paid on parcel arrival (Cash/Transport)</small>
+            </div>
+            <div class="form-group">
+              <label for="bill-advance-mode">Advance Mode</label>
+              <select id="bill-advance-mode" class="form-select">
+                <option value="Cash">Cash</option>
+                <option value="UPI / GPay">UPI / GPay / PhonePe</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="bill-transport">Transport / Bilty Details</label>
+            <input type="text" id="bill-transport" class="form-input" placeholder="e.g. V-Trans Bilty #9812 / Gati">
+          </div>
+
+          <div class="form-group">
+            <label for="bill-notes">Notes / Sizes</label>
+            <input type="text" id="bill-notes" class="form-input" placeholder="e.g. Assorted sizes 6 to 10">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Credit Bill & Add to Udhar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RECORD PAYMENT (WEEKLY / AD-HOC SETTLEMENT) -->
+  <div id="modal-record-payment" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💵 Record Payment to Dealer (Jama)</h3>
+        <button class="modal-close" type="button">&times;</button>
+      </div>
+      <form id="form-record-payment">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="pay-dealer-select">Select Supplier / Dealer *</label>
+            <select id="pay-dealer-select" class="form-select" required>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <!-- Dynamic Outstanding Balance Preview -->
+          <div id="pay-balance-preview"></div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pay-amount">Payment Amount (₹) *</label>
+              <input type="number" id="pay-amount" class="form-input font-bold text-success" style="font-size: 1.25rem;" required min="1" placeholder="Enter amount">
+            </div>
+            <div class="form-group">
+              <label for="pay-date">Payment Date *</label>
+              <input type="date" id="pay-date" class="form-input" required>
+            </div>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="form-group">
+            <label>Quick Preset Amounts</label>
+            <div id="pay-quick-presets" class="quick-presets-row"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pay-mode">Payment Mode</label>
+              <select id="pay-mode" class="form-select">
+                <option value="UPI / GPay">UPI (GooglePay / PhonePe / Paytm)</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank Transfer (NEFT/RTGS)">Bank Transfer (NEFT / RTGS)</option>
+                <option value="Cheque">Bank Cheque</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pay-ref">Reference / UPI ID / Cheque No.</label>
+              <input type="text" id="pay-ref" class="form-input" placeholder="e.g. UPI Ref #492819">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="pay-notes">Payment Remarks</label>
+            <input type="text" id="pay-notes" class="form-input" placeholder="e.g. Weekly settlement payment">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-success">Confirm & Save Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: FULL DEALER KHATA / PASSBOOK STATEMENT -->
+  <div id="modal-khata-detail" class="modal-overlay">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <div>
+          <h3 id="khata-dealer-name">Dealer Khata Statement</h3>
+          <div style="display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+            <span id="khata-dealer-location">📍 Agra</span>
+            <span id="khata-dealer-phone">📞 9876543210</span>
+            <span id="khata-dealer-day">🗓️ Weekly Day: Saturday</span>
+          </div>
+        </div>
+        <button class="modal-close" type="button">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Khata Financial Summary -->
+        <div class="khata-header-summary">
+          <div class="khata-stat-box">
+            <span class="stat-label">Total Inward Billed</span>
+            <span class="stat-value" id="khata-stat-billed">₹0</span>
+          </div>
+          <div class="khata-stat-box">
+            <span class="stat-label">Opening Balance</span>
+            <span class="stat-value" id="khata-stat-opening">₹0</span>
+          </div>
+          <div class="khata-stat-box">
+            <span class="stat-label">Total Paid (Jama)</span>
+            <span class="stat-value text-success" id="khata-stat-paid">₹0</span>
+          </div>
+          <div class="khata-stat-box">
+            <span class="stat-label">Current Udhar Remaining</span>
+            <span class="stat-value text-amber" id="khata-stat-balance">₹0</span>
+          </div>
+        </div>
+
+        <!-- Ledger Table -->
+        <div class="table-responsive">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Particulars / Article Details</th>
+                <th class="text-right">Debit / Bill (Udhar)</th>
+                <th class="text-right">Credit / Paid (Jama)</th>
+                <th class="text-right">Balance Due</th>
+              </tr>
+            </thead>
+            <tbody id="khata-ledger-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-sm btn-outline" onclick="UI.printKhataStatement()">🖨️ Print Statement</button>
+          <button type="button" id="btn-khata-share" class="btn btn-sm btn-outline" style="color: #25d366; border-color: #25d366;">💬 WhatsApp Khata</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" id="btn-khata-add-bill" class="btn btn-sm btn-primary">+ Inward Bill</button>
+          <button type="button" id="btn-khata-pay" class="btn btn-sm btn-success">💵 Pay Balance</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./js/store.js"></script>
+  <script src="./js/ui.js"></script>
+  <script src="./js/pwa.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
