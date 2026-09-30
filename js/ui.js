@@ -516,13 +516,16 @@ _Sent via StepLedger Footwear PWA_`;
   // Tab switching
   switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab, .mobile-nav-item').forEach(el => el.classList.remove('active'));
 
     const targetTab = document.getElementById(`tab-${tabId}`);
-    const navBtn = document.querySelector(`[data-tab-target="${tabId}"]`);
+    const navBtns = document.querySelectorAll(`[data-tab-target="${tabId}"]`);
 
-    if (targetTab) targetTab.classList.add('active');
-    if (navBtn) navBtn.classList.add('active');
+    if (targetTab) {
+      targetTab.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    navBtns.forEach(btn => btn.classList.add('active'));
 
     // Trigger specific renders
     if (tabId === 'dealers') {

@@ -16,11 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     UI.refreshAll();
   });
 
-  // --- NAVIGATION TABS ---
-  document.querySelectorAll('.nav-tab').forEach(tabBtn => {
+  // --- NAVIGATION TABS (Desktop + Mobile) ---
+  document.querySelectorAll('.nav-tab, .mobile-nav-item[data-tab-target]').forEach(tabBtn => {
     tabBtn.addEventListener('click', () => {
       const target = tabBtn.getAttribute('data-tab-target');
-      UI.switchTab(target);
+      if (target) UI.switchTab(target);
     });
   });
 
