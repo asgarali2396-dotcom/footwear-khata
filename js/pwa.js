@@ -23,7 +23,10 @@ const PWA = {
     const ua = navigator.userAgent || '';
     this.isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
     this.isAndroid = /Android/.test(ua);
-    this.isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    this.isInstalled =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true ||
+      localStorage.getItem('pwa-installed') === 'true';
 
     // Add standalone class to body for custom app-like mobile styling
     if (this.isInstalled) {
@@ -97,6 +100,7 @@ const PWA = {
         const { outcome } = await deferredInstallPrompt.userChoice;
         console.log('[PWA] User response to install:', outcome);
         if (outcome === 'accepted') {
+          localStorage.setItem('pwa-installed', 'true');
           if (typeof UI !== 'undefined' && UI.showToast) {
             UI.showToast('StepLedger App installed! 🎉', 'success');
           }
@@ -118,6 +122,7 @@ const PWA = {
     window.addEventListener('appinstalled', () => {
       console.log('[PWA] App successfully installed');
       this.isInstalled = true;
+      localStorage.setItem('pwa-installed', 'true');
       if (installBanner) installBanner.classList.add('hidden');
       if (headerInstallBtn) headerInstallBtn.classList.add('hidden');
       if (typeof UI !== 'undefined' && UI.showToast) {
