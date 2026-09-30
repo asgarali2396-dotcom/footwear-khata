@@ -3,7 +3,7 @@
  * Robust offline-first caching for mobile footwear khata
  */
 
-const CACHE_NAME = 'stepledger-pwa-v4';
+const CACHE_NAME = 'stepledger-pwa-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
