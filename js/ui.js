@@ -207,8 +207,7 @@ const UI = {
             <div class="day-column ${isToday ? 'current-day' : ''}">
               <div class="day-header">
                 <div>
-                  <span class="day-title">${day}</span>
-                  ${isToday ? '<span class="today-pill">TODAY</span>' : ''}
+                  <span class="day-title">${day}</span>${isToday ? '<span class="today-pill">TODAY</span>' : ''}
                 </div>
                 <span class="day-total-badge ${totalDayDue > 0 ? 'badge-due' : 'badge-clear'}">
                   ${UI.formatCurrency(totalDayDue)}
@@ -254,7 +253,7 @@ const UI = {
       txs = txs.filter(t => t.type === filterType);
     }
 
-    if (filterDealer !== 'all') {
+    if (filterDealer && filterDealer !== 'all') {
       txs = txs.filter(t => t.dealerId === filterDealer);
     }
 
@@ -291,12 +290,10 @@ const UI = {
             <div class="tx-details-row">
               ${isBill ? `
                 <span class="tx-spec">Bill #${tx.billNumber || 'Challan'}</span>
-                <span class="tx-spec">👟 ${tx.footwearCategory || 'Footwear'} (${tx.brandOrArticle || 'Mixed'})</span>
-                <span class="tx-spec">📦 ${tx.cartons || 0} Cartons (${tx.totalPairs || 0} Pairs)</span>
-                ${tx.transportName ? `<span class="tx-spec">🚛 ${tx.transportName}</span>` : ''}
+                <span class="tx-spec">👟 ${tx.footwearCategory \vert{}\vert{} 'Footwear'} (${tx.brandOrArticle || 'Mixed'})</span>
+                <span class="tx-spec">📦 ${tx.cartons || 0} Cartons (${tx.totalPairs \vert{}\vert{} 0} Pairs)</span>${tx.transportName ? `<span class="tx-spec">🚛 ${tx.transportName}</span>` : ''}
               ` : `
-                <span class="tx-spec">Mode: ${tx.paymentMode || 'Cash'}</span>
-                ${tx.referenceNo ? `<span class="tx-spec">Ref: ${tx.referenceNo}</span>` : ''}
+                <span class="tx-spec">Mode: ${tx.paymentMode \vert{}\vert{} 'Cash'}</span>${tx.referenceNo ? `<span class="tx-spec">Ref: ${tx.referenceNo}</span>` : ''}
                 ${tx.notes ? `<span class="tx-spec note-text">"${tx.notes}"</span>` : ''}
               `}
             </div>
@@ -342,7 +339,6 @@ const UI = {
     modal.dataset.activeDealerId = dealerId;
 
     // Render Ledger Rows with Running Balance Calculation
-    // We compute running balance chronologically (oldest to newest) then display newest first
     const sortedChronological = [...txs].sort((a, b) => new Date(a.date) - new Date(b.date));
     let runningBalance = fin.openingBalance;
 
@@ -353,7 +349,7 @@ const UI = {
         runningBalance -= (Number(tx.amount) || 0);
       }
       return { ...tx, currentRunning: runningBalance };
-    }).reverse(); // Show newest at top of table
+    }).reverse();
 
     const tbody = document.getElementById('khata-ledger-tbody');
     if (tbody) {
@@ -378,9 +374,9 @@ const UI = {
                 <div class="ledger-desc">
                   <strong>${isBill ? `Bill #${tx.billNumber || 'Challan'}` : tx.paymentMode}</strong>
                   ${isBill ? `
-                    <small>${tx.footwearCategory || ''} - ${tx.brandOrArticle || ''} (${tx.cartons || 0}ctn / ${tx.totalPairs || 0}prs)</small>
+                    <small>${tx.footwearCategory \vert{}\vert{} ''} -${tx.brandOrArticle || ''} (${tx.cartons \vert{}\vert{} 0}ctn / ${tx.totalPairs || 0}prs)</small>
                   ` : `
-                    <small>${tx.referenceNo || ''} ${tx.notes ? `• ${tx.notes}` : ''}</small>
+                    <small>${tx.referenceNo \vert{}\vert{} ''}${tx.notes ? `• ${tx.notes}` : ''}</small>
                   `}
                 </div>
               </td>
@@ -421,6 +417,18 @@ const UI = {
   openBillModal(dealerId = '') {
     const modal = document.getElementById('modal-stock-bill');
     if (!modal) return;
+
+    const form = document.getElementById('form-stock-bill');
+    if (form) {
+      form.reset();
+      const totalPairsInput = document.getElementById('bill-total-pairs');
+      const amountInput = document.getElementById('bill-amount');
+      const pairsPerCartonInput = document.getElementById('bill-pairs-per-carton');
+      
+      if (totalPairsInput) delete totalPairsInput.dataset.manual;
+      if (amountInput) delete amountInput.dataset.manual;
+      if (pairsPerCartonInput) pairsPerCartonInput.value = 12;
+    }
 
     const select = document.getElementById('bill-dealer-select');
     this.populateDealerDropdown(select, dealerId);
@@ -655,14 +663,19 @@ _Sent via StepLedger Footwear PWA_`;
     this.renderTransactions();
     this.renderReports();
 
-    // Populate filter dropdowns
+    // Populate filter dropdowns correctly
     const txDealerSelect = document.getElementById('tx-filter-dealer');
     if (txDealerSelect) {
-      const currentVal = txDealerSelect.value;
-      this.populateDealerDropdown(txDealerSelect, currentVal);
-      // Prepend 'All Suppliers'
-      const firstOpt = txDealerSelect.querySelector('option[value=""]');
-      if (firstOpt) firstOpt.textContent = 'All Footwear Dealers';
+      const currentVal = txDealerSelect.value || 'all';
+      const dealers = window.appStore.getDealers();
+      txDealerSelect.innerHTML = `
+        <option value="all">All Footwear Dealers</option>
+        ${dealers.map(d => `
+          <option value="${d.id}" ${d.id === currentVal ? 'selected' : ''}>
+            ${d.name} (${d.city || 'Wholesale'})
+          </option>
+        `).join('')}
+      `;
     }
   }
 };
