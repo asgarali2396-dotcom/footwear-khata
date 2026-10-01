@@ -96,12 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const pairsPerCarton = Number(pairsPerCartonInput.value) || 12;
     const calcPairs = cartons * pairsPerCarton;
     
+    // Auto-update total pairs if cartons are specified and pairs weren't locked manually
     if (cartons > 0 && (!totalPairsInput.dataset.manual || totalPairsInput.value == 0)) {
       totalPairsInput.value = calcPairs;
     }
 
     const rate = Number(rateInput.value) || 0;
     const finalPairs = Number(totalPairsInput.value) || calcPairs;
+
+    // Auto-calculate bill amount
     if (rate > 0 && finalPairs > 0 && (!amountInput.dataset.manual || amountInput.value == 0)) {
       amountInput.value = Math.round(finalPairs * rate);
     }
@@ -112,9 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
     pairsPerCartonInput.addEventListener('input', recalculateStockBill);
     rateInput.addEventListener('input', recalculateStockBill);
 
-    // If user manually types in totalPairs or amount, don't overwrite blindly
-    totalPairsInput.addEventListener('input', () => { totalPairsInput.dataset.manual = "true"; recalculateStockBill(); });
-    amountInput.addEventListener('input', () => { amountInput.dataset.manual = "true"; });
+    totalPairsInput.addEventListener('input', () => { 
+      totalPairsInput.dataset.manual = "true"; 
+      recalculateStockBill(); 
+    });
+    
+    amountInput.addEventListener('input', () => { 
+      amountInput.dataset.manual = "true"; 
+    });
   }
 
   // --- FORM SUBMISSION: ADD DEALER ---
