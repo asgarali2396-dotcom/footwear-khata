@@ -408,7 +408,10 @@
         <div class="modal-body">
           <div class="form-row">
             <div class="form-group">
-              <label for="bill-dealer-select">Select Supplier / Dealer *</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label for="bill-dealer-select" style="margin-bottom: 0;">Select Supplier / Dealer *</label>
+                <button type="button" class="btn btn-xs btn-outline" onclick="UI.openModal('modal-add-dealer')" style="font-size: 0.72rem;">+ New Dealer</button>
+              </div>
               <select id="bill-dealer-select" class="form-select" required>
                 <!-- Populated dynamically -->
               </select>
@@ -638,11 +641,14 @@
 
   <!-- Mobile Floating Quick Actions Bar -->
   <div class="mobile-quick-actions" id="mobile-quick-actions">
+    <button class="btn btn-sm btn-outline mobile-fab-btn" onclick="UI.openModal('modal-add-dealer')" title="Add Dealer" style="background: var(--bg-surface);">
+      <span>＋</span> Dealer
+    </button>
     <button class="btn btn-sm btn-primary mobile-fab-btn" onclick="UI.openBillModal()" title="Add Inward Bill">
-      <span>＋</span> New Bill
+      <span>📦</span> Inward Bill
     </button>
     <button class="btn btn-sm btn-success mobile-fab-btn" onclick="UI.openPaymentModal()" title="Record Payment">
-      <span>💵</span> Pay Dealer
+      <span>💵</span> Pay
     </button>
   </div>
 
