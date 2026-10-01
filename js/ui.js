@@ -104,58 +104,64 @@ const UI = {
       return;
     }
 
-    container.innerHTML = dealers.map(dealer => {
+    const cardsHtml = dealers.map(dealer => {
       const fin = window.appStore.getDealerFinancials(dealer.id);
       const isDue = fin.balance > 0;
       const totalTurnover = fin.openingBalance + fin.totalBilled;
       const percentPaid = totalTurnover > 0 ? Math.min(100, Math.round((fin.totalPaid / totalTurnover) * 100)) : 100;
+      
+      const balanceClass = isDue ? 'has-balance' : 'settled';
+      const avatarInitials = dealer.name.substring(0, 2).toUpperCase();
+      const city = dealer.city || 'Wholesale Mandi';
+      const contactBadge = dealer.contactPerson ? `<span class="contact-badge">👤 ${dealer.contactPerson}</span>` : '';
+      const day = dealer.settlementDay || 'Weekly';
+      const totalBilled = this.formatCurrency(fin.totalBilled + fin.openingBalance);
+      const totalPaid = this.formatCurrency(fin.totalPaid);
+      const udharBalance = isDue ? this.formatCurrency(fin.balance) : '✓ Settled';
+      const udharClass = isDue ? 'text-amber font-bold' : 'text-success';
+      const stockBadge = fin.totalPairs > 0 ? `📦 ${fin.totalPairs} pairs stock` : '';
 
       return `
-        <div class="dealer-card ${isDue ? 'has-balance' : 'settled'}" data-dealer-id="${dealer.id}">
+        <div class="dealer-card ${balanceClass}" data-dealer-id="${dealer.id}">
           <div class="dealer-card-header">
             <div class="dealer-avatar">
-              <span>${dealer.name.substring(0, 2).toUpperCase()}</span>
+              <span>${avatarInitials}</span>
             </div>
             <div class="dealer-title-wrap">
               <h3 class="dealer-name" onclick="UI.openKhataModal('${dealer.id}')">${dealer.name}</h3>
               <div class="dealer-sub">
-                <span class="location-badge">📍 ${dealer.city || 'Wholesale Mandi'}</span>
-                ${dealer.contactPerson ? `<span class="contact-badge">👤 ${dealer.contactPerson}</span>` : ''}
+                <span class="location-badge">📍 ${city}</span>
+                ${contactBadge}
               </div>
             </div>
-            <span class="day-badge" title="Weekly Settlement Day">🗓️ ${dealer.settlementDay || 'Weekly'}</span>
+            <span class="day-badge" title="Weekly Settlement Day">🗓️ ${day}</span>
           </div>
 
-          <!-- Financial Snapshot -->
           <div class="dealer-stats-row">
             <div class="dstat">
               <span class="dstat-label">Total Billed</span>
-              <span class="dstat-value">${this.formatCurrency(fin.totalBilled + fin.openingBalance)}</span>
+              <span class="dstat-value">${totalBilled}</span>
             </div>
             <div class="dstat">
               <span class="dstat-label">Total Paid (Jama)</span>
-              <span class="dstat-value text-success">${this.formatCurrency(fin.totalPaid)}</span>
+              <span class="dstat-value text-success">${totalPaid}</span>
             </div>
             <div class="dstat">
               <span class="dstat-label">Udhar Balance</span>
-              <span class="dstat-value ${isDue ? 'text-amber font-bold' : 'text-success'}">
-                ${isDue ? this.formatCurrency(fin.balance) : '✓ Settled'}
-              </span>
+              <span class="dstat-value ${udharClass}">${udharBalance}</span>
             </div>
           </div>
 
-          <!-- Payment Progress Bar -->
           <div class="progress-wrap">
             <div class="progress-label">
               <span>Paid: ${percentPaid}%</span>
-              <span>${fin.totalPairs > 0 ? `📦 ${fin.totalPairs} pairs stock` : ''}</span>
+              <span>${stockBadge}</span>
             </div>
             <div class="progress-track">
               <div class="progress-fill" style="width: ${percentPaid}%;"></div>
             </div>
           </div>
 
-          <!-- Action Buttons -->
           <div class="dealer-actions">
             <button class="btn btn-sm btn-outline" onclick="UI.openKhataModal('${dealer.id}')" title="View Full Ledger">
               📖 Khata / Ledger
@@ -173,6 +179,8 @@ const UI = {
         </div>
       `;
     }).join('');
+
+    container.innerHTML = cardsHtml;
   },
 
   // Render Weekly Planner View
@@ -195,51 +203,63 @@ const UI = {
       }
     });
 
-    container.innerHTML = `
-      <div class="weekly-planner-grid">
-        ${days.map(day => {
-          const isToday = day.toLowerCase() === currentDay.toLowerCase();
-          const items = dayGroups[day] || [];
-          const totalDayDue = items.reduce((sum, item) => sum + Math.max(0, item.fin.balance), 0);
-          const activeDealersCount = items.filter(item => item.fin.balance > 0).length;
+    const plannerHtml = days.map(day => {
+      const isToday = day.toLowerCase() === currentDay.toLowerCase();
+      const items = dayGroups[day] || [];
+      const totalDayDue = items.reduce((sum, item) => sum + Math.max(0, item.fin.balance), 0);
+      
+      const dayClass = isToday ? 'current-day' : '';
+      const todayPill = isToday ? '<span class="today-pill">TODAY</span>' : '';
+      const badgeClass = totalDayDue > 0 ? 'badge-due' : 'badge-clear';
+      const formattedTotal = this.formatCurrency(totalDayDue);
+
+      let cardsListHtml = '';
+      if (items.length === 0) {
+        cardsListHtml = '<div class="day-empty">No suppliers scheduled</div>';
+      } else {
+        cardsListHtml = items.map(({ dealer, fin }) => {
+          const cardClass = fin.balance > 0 ? 'needs-pay' : 'done';
+          const city = dealer.city || 'Wholesale';
+          const balClass = fin.balance > 0 ? 'text-amber' : 'text-success';
+          const balText = fin.balance > 0 ? `Pending: ${this.formatCurrency(fin.balance)}` : '✓ Cleared';
+          
+          let actionHtml = '';
+          if (fin.balance > 0) {
+            actionHtml = `<button class="btn btn-xs btn-success" onclick="UI.openPaymentModal('${dealer.id}')">Pay</button>`;
+          } else {
+            actionHtml = `<span class="paid-check">✓</span>`;
+          }
 
           return `
-            <div class="day-column ${isToday ? 'current-day' : ''}">
-              <div class="day-header">
-                <div>
-                  <span class="day-title">${day}</span>${isToday ? '<span class="today-pill">TODAY</span>' : ''}
-                </div>
-                <span class="day-total-badge ${totalDayDue > 0 ? 'badge-due' : 'badge-clear'}">
-                  ${UI.formatCurrency(totalDayDue)}
-                </span>
+            <div class="day-dealer-card ${cardClass}">
+              <div class="dd-info">
+                <strong>${dealer.name}</strong>
+                <span class="dd-city">${city}</span>
+                <span class="dd-bal ${balClass}">${balText}</span>
               </div>
-              <div class="day-cards-list">
-                ${items.length === 0 ? `
-                  <div class="day-empty">No suppliers scheduled</div>
-                ` : items.map(({ dealer, fin }) => `
-                  <div class="day-dealer-card ${fin.balance > 0 ? 'needs-pay' : 'done'}">
-                    <div class="dd-info">
-                      <strong>${dealer.name}</strong>
-                      <span class="dd-city">${dealer.city || 'Wholesale'}</span>
-                      <span class="dd-bal ${fin.balance > 0 ? 'text-amber' : 'text-success'}">
-                        ${fin.balance > 0 ? `Pending: ${UI.formatCurrency(fin.balance)}` : '✓ Cleared'}
-                      </span>
-                    </div>
-                    ${fin.balance > 0 ? `
-                      <button class="btn btn-xs btn-success" onclick="UI.openPaymentModal('${dealer.id}')">
-                        Pay
-                      </button>
-                    ` : `
-                      <span class="paid-check">✓</span>
-                    `}
-                  </div>
-                `).join('')}
-              </div>
+              ${actionHtml}
             </div>
           `;
-        }).join('')}
-      </div>
-    `;
+        }).join('');
+      }
+
+      return `
+        <div class="day-column ${dayClass}">
+          <div class="day-header">
+            <div>
+              <span class="day-title">${day}</span>
+              ${todayPill}
+            </div>
+            <span class="day-total-badge ${badgeClass}">${formattedTotal}</span>
+          </div>
+          <div class="day-cards-list">
+            ${cardsListHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = `<div class="weekly-planner-grid">${plannerHtml}</div>`;
   },
 
   // Render Master Transactions Feed
@@ -268,45 +288,71 @@ const UI = {
       return;
     }
 
-    container.innerHTML = txs.map(tx => {
+    const txsHtml = txs.map(tx => {
       const dealer = window.appStore.getDealerById(tx.dealerId);
+      const dealerName = dealer ? dealer.name : 'Unknown Dealer';
       const isBill = tx.type === 'BILL';
+      const dateStr = this.formatDate(tx.date);
+      
+      const rowClass = isBill ? 'tx-bill' : 'tx-payment';
+      const icon = isBill ? '📦' : '💵';
+      const tagClass = isBill ? 'tag-bill' : 'tag-payment';
+      const tagText = isBill ? 'STOCK INWARD (UDHAR)' : 'PAYMENT PAID (JAMA)';
+      const amountClass = isBill ? 'text-amber' : 'text-success';
+      const amountPrefix = isBill ? '+' : '-';
+      const formattedAmt = this.formatCurrency(tx.amount);
+
+      let detailsHtml = '';
+      if (isBill) {
+        const billNum = tx.billNumber || 'Challan';
+        const category = tx.footwearCategory || 'Footwear';
+        const brand = tx.brandOrArticle || 'Mixed';
+        const ctns = tx.cartons || 0;
+        const prs = tx.totalPairs || 0;
+        const transportHtml = tx.transportName ? `<span class="tx-spec">🚛 ${tx.transportName}</span>` : '';
+        
+        detailsHtml = `
+          <span class="tx-spec">Bill #${billNum}</span>
+          <span class="tx-spec">👟 ${category} (${brand})</span>
+          <span class="tx-spec">📦 ${ctns} Cartons (${prs} Pairs)</span>
+          ${transportHtml}
+        `;
+      } else {
+        const mode = tx.paymentMode || 'Cash';
+        const refHtml = tx.referenceNo ? `<span class="tx-spec">Ref: ${tx.referenceNo}</span>` : '';
+        const notesHtml = tx.notes ? `<span class="tx-spec note-text">"${tx.notes}"</span>` : '';
+        
+        detailsHtml = `
+          <span class="tx-spec">Mode: ${mode}</span>
+          ${refHtml}
+          ${notesHtml}
+        `;
+      }
 
       return `
-        <div class="tx-row ${isBill ? 'tx-bill' : 'tx-payment'}">
-          <div class="tx-badge-icon">
-            ${isBill ? '📦' : '💵'}
-          </div>
+        <div class="tx-row ${rowClass}">
+          <div class="tx-badge-icon">${icon}</div>
           <div class="tx-info-col">
             <div class="tx-primary-row">
-              <span class="tx-type-tag ${isBill ? 'tag-bill' : 'tag-payment'}">
-                ${isBill ? 'STOCK INWARD (UDHAR)' : 'PAYMENT PAID (JAMA)'}
-              </span>
-              <strong class="tx-dealer-name" onclick="UI.openKhataModal('${tx.dealerId}')">
-                ${dealer ? dealer.name : 'Unknown Dealer'}
-              </strong>
-              <span class="tx-date">${this.formatDate(tx.date)}</span>
+              <span class="tx-type-tag ${tagClass}">${tagText}</span>
+              <strong class="tx-dealer-name" onclick="UI.openKhataModal('${tx.dealerId}')">${dealerName}</strong>
+              <span class="tx-date">${dateStr}</span>
             </div>
             <div class="tx-details-row">
-              ${isBill ? `
-                <span class="tx-spec">Bill #${tx.billNumber || 'Challan'}</span>
-                <span class="tx-spec">👟 ${tx.footwearCategory \vert{}\vert{} 'Footwear'} (${tx.brandOrArticle || 'Mixed'})</span>
-                <span class="tx-spec">📦 ${tx.cartons || 0} Cartons (${tx.totalPairs \vert{}\vert{} 0} Pairs)</span>${tx.transportName ? `<span class="tx-spec">🚛 ${tx.transportName}</span>` : ''}
-              ` : `
-                <span class="tx-spec">Mode: ${tx.paymentMode \vert{}\vert{} 'Cash'}</span>${tx.referenceNo ? `<span class="tx-spec">Ref: ${tx.referenceNo}</span>` : ''}
-                ${tx.notes ? `<span class="tx-spec note-text">"${tx.notes}"</span>` : ''}
-              `}
+              ${detailsHtml}
             </div>
           </div>
           <div class="tx-amount-col">
-            <span class="tx-amount ${isBill ? 'text-amber' : 'text-success'}">
-              ${isBill ? '+' : '-'}${this.formatCurrency(tx.amount)}
+            <span class="tx-amount ${amountClass}">
+              ${amountPrefix}${formattedAmt}
             </span>
             <button class="btn-delete-tx" onclick="UI.deleteTx('${tx.id}')" title="Delete transaction">🗑️</button>
           </div>
         </div>
       `;
     }).join('');
+
+    container.innerHTML = txsHtml;
   },
 
   // Open Full Ledger / Khata Modal for a specific Dealer
@@ -354,44 +400,52 @@ const UI = {
     const tbody = document.getElementById('khata-ledger-tbody');
     if (tbody) {
       if (computedLedger.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="text-center py-4">No transactions recorded yet.</td>
-          </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">No transactions recorded yet.</td></tr>`;
       } else {
-        tbody.innerHTML = computedLedger.map(tx => {
+        const rowsHtml = computedLedger.map(tx => {
           const isBill = tx.type === 'BILL';
+          const dateStr = this.formatDate(tx.date);
+          const badgeClass = isBill ? 'badge-bill' : 'badge-payment';
+          const badgeText = isBill ? 'STOCK BILL' : 'PAYMENT';
+          const descTitle = isBill ? `Bill #${tx.billNumber || 'Challan'}` : tx.paymentMode;
+          
+          let descSubHtml = '';
+          if (isBill) {
+            const cat = tx.footwearCategory || '';
+            const brand = tx.brandOrArticle || '';
+            const ctns = tx.cartons || 0;
+            const prs = tx.totalPairs || 0;
+            descSubHtml = `<small>${cat} - ${brand} (${ctns}ctn / ${prs}prs)</small>`;
+          } else {
+            const ref = tx.referenceNo || '';
+            const noteStr = tx.notes ? `• ${tx.notes}` : '';
+            descSubHtml = `<small>${ref} ${noteStr}</small>`;
+          }
+
+          const debitAmt = isBill ? this.formatCurrency(tx.amount) : '-';
+          const debitClass = isBill ? 'text-amber font-semibold' : '';
+          const creditAmt = !isBill ? this.formatCurrency(tx.amount) : '-';
+          const creditClass = !isBill ? 'text-success font-semibold' : '';
+          const runBalAmt = this.formatCurrency(tx.currentRunning);
+
           return `
             <tr>
-              <td>${this.formatDate(tx.date)}</td>
-              <td>
-                <span class="badge ${isBill ? 'badge-bill' : 'badge-payment'}">
-                  ${isBill ? 'STOCK BILL' : 'PAYMENT'}
-                </span>
-              </td>
+              <td>${dateStr}</td>
+              <td><span class="badge ${badgeClass}">${badgeText}</span></td>
               <td>
                 <div class="ledger-desc">
-                  <strong>${isBill ? `Bill #${tx.billNumber || 'Challan'}` : tx.paymentMode}</strong>
-                  ${isBill ? `
-                    <small>${tx.footwearCategory \vert{}\vert{} ''} -${tx.brandOrArticle || ''} (${tx.cartons \vert{}\vert{} 0}ctn / ${tx.totalPairs || 0}prs)</small>
-                  ` : `
-                    <small>${tx.referenceNo \vert{}\vert{} ''}${tx.notes ? `• ${tx.notes}` : ''}</small>
-                  `}
+                  <strong>${descTitle}</strong>
+                  ${descSubHtml}
                 </div>
               </td>
-              <td class="text-right ${isBill ? 'text-amber font-semibold' : ''}">
-                ${isBill ? this.formatCurrency(tx.amount) : '-'}
-              </td>
-              <td class="text-right ${!isBill ? 'text-success font-semibold' : ''}">
-                ${!isBill ? this.formatCurrency(tx.amount) : '-'}
-              </td>
-              <td class="text-right font-bold">
-                ${this.formatCurrency(tx.currentRunning)}
-              </td>
+              <td class="text-right ${debitClass}">${debitAmt}</td>
+              <td class="text-right ${creditClass}">${creditAmt}</td>
+              <td class="text-right font-bold">${runBalAmt}</td>
             </tr>
           `;
         }).join('');
+        
+        tbody.innerHTML = rowsHtml;
       }
     }
 
@@ -442,14 +496,14 @@ const UI = {
   populateDealerDropdown(selectElement, selectedId = '') {
     if (!selectElement) return;
     const dealers = window.appStore.getDealers();
-    selectElement.innerHTML = `
-      <option value="">-- Choose Footwear Supplier/Dealer --</option>
-      ${dealers.map(d => `
-        <option value="${d.id}" ${d.id === selectedId ? 'selected' : ''}>
-          ${d.name} (${d.city || 'Wholesale'})
-        </option>
-      `).join('')}
-    `;
+    
+    const optionsHtml = dealers.map(d => {
+      const selectedAttr = d.id === selectedId ? 'selected' : '';
+      const cityText = d.city || 'Wholesale';
+      return `<option value="${d.id}" ${selectedAttr}>${d.name} (${cityText})</option>`;
+    }).join('');
+
+    selectElement.innerHTML = '<option value="">-- Choose Footwear Supplier/Dealer --</option>' + optionsHtml;
   },
 
   updatePaymentDealerPreview() {
@@ -464,10 +518,14 @@ const UI = {
     }
 
     const fin = window.appStore.getDealerFinancials(dealerId);
+    const boxClass = fin.balance > 0 ? 'bg-amber-soft' : 'bg-green-soft';
+    const textClass = fin.balance > 0 ? 'text-amber' : 'text-success';
+    const amtFormatted = this.formatCurrency(fin.balance);
+
     preview.innerHTML = `
-      <div class="balance-preview-box ${fin.balance > 0 ? 'bg-amber-soft' : 'bg-green-soft'}">
+      <div class="balance-preview-box ${boxClass}">
         <span>Current Udhar Outstanding:</span>
-        <strong class="${fin.balance > 0 ? 'text-amber' : 'text-success'}">${this.formatCurrency(fin.balance)}</strong>
+        <strong class="${textClass}">${amtFormatted}</strong>
       </div>
     `;
 
@@ -475,9 +533,10 @@ const UI = {
     const presetsContainer = document.getElementById('pay-quick-presets');
     if (presetsContainer) {
       if (fin.balance > 0) {
+        const halfBalance = Math.round(fin.balance / 2);
         presetsContainer.innerHTML = `
-          <button type="button" class="preset-btn" onclick="document.getElementById('pay-amount').value = ${fin.balance}">Clear Full (${this.formatCurrency(fin.balance)})</button>
-          <button type="button" class="preset-btn" onclick="document.getElementById('pay-amount').value = ${Math.round(fin.balance / 2)}">Pay 50%</button>
+          <button type="button" class="preset-btn" onclick="document.getElementById('pay-amount').value = ${fin.balance}">Clear Full (${amtFormatted})</button>
+          <button type="button" class="preset-btn" onclick="document.getElementById('pay-amount').value = ${halfBalance}">Pay 50%</button>
           <button type="button" class="preset-btn" onclick="document.getElementById('pay-amount').value = 10000">₹10,000</button>
           <button type="button" class="preset-btn" onclick="document.getElementById('pay-amount').value = 25000">₹25,000</button>
           <button type="button" class="preset-btn" onclick="document.getElementById('pay-amount').value = 50000">₹50,000</button>
@@ -565,12 +624,15 @@ _Sent via StepLedger Footwear PWA_`;
       if (entries.length === 0) {
         catContainer.innerHTML = '<p class="text-muted">No stock inwarded yet.</p>';
       } else {
-        catContainer.innerHTML = entries.map(([cat, pairs]) => `
-          <div class="report-stat-row">
-            <span class="cat-label">👟 ${cat}</span>
-            <strong class="cat-value">${pairs.toLocaleString('en-IN')} pairs</strong>
-          </div>
-        `).join('');
+        const catRows = entries.map(([cat, pairs]) => {
+          return `
+            <div class="report-stat-row">
+              <span class="cat-label">👟 ${cat}</span>
+              <strong class="cat-value">${pairs.toLocaleString('en-IN')} pairs</strong>
+            </div>
+          `;
+        }).join('');
+        catContainer.innerHTML = catRows;
       }
     }
 
@@ -588,15 +650,20 @@ _Sent via StepLedger Footwear PWA_`;
       if (topCreditors.length === 0) {
         creditorContainer.innerHTML = '<p class="text-success">Awesome! Zero pending udhar across all suppliers.</p>';
       } else {
-        creditorContainer.innerHTML = topCreditors.map(({ dealer, fin }) => `
-          <div class="report-creditor-row" onclick="UI.openKhataModal('${dealer.id}')">
-            <div>
-              <strong>${dealer.name}</strong>
-              <small class="block text-muted">${dealer.city || 'Wholesale'}</small>
+        const creditorRows = topCreditors.map(({ dealer, fin }) => {
+          const city = dealer.city || 'Wholesale';
+          const balAmt = this.formatCurrency(fin.balance);
+          return `
+            <div class="report-creditor-row" onclick="UI.openKhataModal('${dealer.id}')">
+              <div>
+                <strong>${dealer.name}</strong>
+                <small class="block text-muted">${city}</small>
+              </div>
+              <strong class="text-amber">${balAmt}</strong>
             </div>
-            <strong class="text-amber">${this.formatCurrency(fin.balance)}</strong>
-          </div>
-        `).join('');
+          `;
+        }).join('');
+        creditorContainer.innerHTML = creditorRows;
       }
     }
   },
@@ -621,8 +688,9 @@ _Sent via StepLedger Footwear PWA_`;
   showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type} animate-slide-up`;
+    const iconStr = type === 'success' ? '✓' : 'ℹ️';
     toast.innerHTML = `
-      <span class="toast-icon">${type === 'success' ? '✓' : 'ℹ️'}</span>
+      <span class="toast-icon">${iconStr}</span>
       <span>${message}</span>
     `;
     document.body.appendChild(toast);
@@ -663,19 +731,18 @@ _Sent via StepLedger Footwear PWA_`;
     this.renderTransactions();
     this.renderReports();
 
-    // Populate filter dropdowns correctly
     const txDealerSelect = document.getElementById('tx-filter-dealer');
     if (txDealerSelect) {
       const currentVal = txDealerSelect.value || 'all';
       const dealers = window.appStore.getDealers();
-      txDealerSelect.innerHTML = `
-        <option value="all">All Footwear Dealers</option>
-        ${dealers.map(d => `
-          <option value="${d.id}" ${d.id === currentVal ? 'selected' : ''}>
-            ${d.name} (${d.city || 'Wholesale'})
-          </option>
-        `).join('')}
-      `;
+      
+      const optionsHtml = dealers.map(d => {
+        const selectedAttr = d.id === currentVal ? 'selected' : '';
+        const cityText = d.city || 'Wholesale';
+        return `<option value="${d.id}" ${selectedAttr}>${d.name} (${cityText})</option>`;
+      }).join('');
+      
+      txDealerSelect.innerHTML = '<option value="all">All Footwear Dealers</option>' + optionsHtml;
     }
   }
 };
